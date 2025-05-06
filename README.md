@@ -1,4 +1,11 @@
-# Cloudflare Workers OpenAPI 3.1
+# Serverless MQ
+
+> A serverless message queue for Cloudflare Workers
+> Based on [Durable Objects](https://developers.cloudflare.com/durable-objects/api/).
+
+---
+
+## Cloudflare Workers OpenAPI 3.1
 
 This is a Cloudflare Worker with OpenAPI 3.1 using [chanfana](https://github.com/cloudflare/chanfana) and [Hono](https://github.com/honojs/hono).
 
@@ -23,3 +30,5 @@ This is an example project made to be used as a quick start into building OpenAP
 1. Run `wrangler dev` to start a local instance of the API.
 2. Open `http://localhost:8787/` in your browser to see the Swagger interface where you can try the endpoints.
 3. Changes made in the `src/` folder will automatically trigger the server to reload, you only need to refresh the Swagger interface.
+
+// After adding bindings to `wrangler.jsonc`, regenerate this interface via `npm run cf-typegen`

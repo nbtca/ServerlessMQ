@@ -1,13 +1,33 @@
-import { DateTime, Str } from "chanfana";
-import type { Context } from "hono";
-import { z } from "zod";
+import { Context as HonoContext } from "hono";
+interface HTTPResponseError extends Error {
+	getResponse: () => Response;
+}
+interface Context<P extends string = any>
+	extends HonoContext<
+		{
+			Bindings: Env;
+		},
+		P
+	> {}
 
-export type AppContext = Context<{ Bindings: Env }>;
-
-export const Task = z.object({
-	name: Str({ example: "lorem" }),
-	slug: Str(),
-	description: Str({ required: false }),
-	completed: z.boolean().default(false),
-	due_date: DateTime(),
-});
+class HttpError extends Error implements HTTPResponseError {
+	constructor(
+		message: string,
+		public statusCode: number = 500,
+		public code?: string,
+	) {
+		super(message);
+		this.name = "HttpError";
+	}
+	getResponse() {
+		return new Response(this.message, {
+			status: this.statusCode,
+			headers: { "Content-Type": "plain/text" },
+		});
+	}
+	override toString() {
+		return `${this.name} (${this.statusCode}): ${this.message}`;
+	}
+}
+export type { Context };
+export { HttpError };

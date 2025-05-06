@@ -1,26 +1,71 @@
 import { fromHono } from "chanfana";
 import { Hono } from "hono";
-import { TaskCreate } from "./endpoints/taskCreate";
-import { TaskDelete } from "./endpoints/taskDelete";
-import { TaskFetch } from "./endpoints/taskFetch";
-import { TaskList } from "./endpoints/taskList";
+import { Scalar } from "@scalar/hono-api-reference";
+import { Webhook } from "./endpoints/Webhook";
+import { Websocket } from "./endpoints/Websocket";
+import WebSocketServer from "./service/WebSocketServer";
+import { HttpError } from "./types";
+import { getServer } from "./utils";
+import { ZodError } from "zod";
 
-// Start a Hono app
 const app = new Hono<{ Bindings: Env }>();
-
-// Setup OpenAPI registry
-const openapi = fromHono(app, {
-	docs_url: "/",
+// Process the error and return a response
+app.onError(async (err, c) => {
+	if (err instanceof HttpError) {
+		return err.getResponse();
+	} else if (err instanceof ZodError) {
+		return Response.json(
+			{
+				error: "Invalid request",
+				message: err.errors,
+			},
+			{
+				status: 400,
+			},
+		);
+	} else {
+		return c.newResponse(
+			JSON.stringify({
+				error: "Internal Server Error",
+				message: err.message,
+				// stack: err.stack,
+			}),
+			500,
+			{
+				"Content-Type": "application/json",
+			},
+		);
+	}
 });
-
-// Register OpenAPI endpoints
-openapi.get("/api/tasks", TaskList);
-openapi.post("/api/tasks", TaskCreate);
-openapi.get("/api/tasks/:taskSlug", TaskFetch);
-openapi.delete("/api/tasks/:taskSlug", TaskDelete);
-
-// You may also register routes for non OpenAPI directly on Hono
-// app.get('/test', (c) => c.text('Hono!'))
-
-// Export the Hono app
+// This is a workaround for the CORS issue
+app.use("*", async (c, next) => {
+	c.res.headers.set("Access-Control-Allow-Origin", "*");
+	c.res.headers.set(
+		"Access-Control-Allow-Methods",
+		"GET, POST, PUT, DELETE, OPTIONS",
+	);
+	c.res.headers.set(
+		"Access-Control-Allow-Headers",
+		"Content-Type, Authorization",
+	);
+	if (c.req.method === "OPTIONS") {
+		return c.newResponse("OK", 200, {
+			"Access-Control-Allow-Origin": "*",
+			"Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+			"Access-Control-Allow-Headers": "Content-Type, Authorization",
+		});
+	}
+	await next();
+});
+// Setup OpenAPI registry
+const openapiUrl = "openapi.json";
+const openapi = fromHono(app, {
+	openapi_url: openapiUrl,
+	docs_url: null,
+	redoc_url: "docs",
+});
+app.get("/", Scalar({ url: openapiUrl }));
+openapi.post("/:topic", Webhook);
+openapi.get("/:topic", Websocket);
 export default app;
+export { WebSocketServer };

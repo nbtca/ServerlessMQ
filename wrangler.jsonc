@@ -9,7 +9,32 @@
 	"compatibility_date": "2025-04-27",
 	"observability": {
 		"enabled": true
-	}
+	},
+	"vars": {
+		"GLOBAL_SECRET": "test",
+		"GLOBAL_TOKEN": "test"
+	},
+	"d1_databases": [
+		{
+			"binding": "ServerlessMQ",
+			"database_name": "serverlessmq",
+			"database_id": "de15e438-4e34-4f88-8f93-84afe805164f"
+		}
+	],
+	"durable_objects": {
+		"bindings": [
+			{
+				"name": "WebSocketServer",
+				"class_name": "WebSocketServer"
+			}
+		]
+	},
+	"migrations": [
+		{
+			"tag": "v1",
+			"new_classes": ["WebSocketServer"]
+		}
+	]
 	/**
 	 * Smart Placement
 	 * Docs: https://developers.cloudflare.com/workers/configuration/smart-placement/#smart-placement
