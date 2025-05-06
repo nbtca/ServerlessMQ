@@ -17,7 +17,9 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 			);
 		}
 		return new Response(
-			`[Durable Object] message: ${data}, connections: ${this.ctx.getWebSockets().length}`,
+			`[Durable Object] message: ${data}, connections: ${
+				this.ctx.getWebSockets().length
+			}`,
 			{
 				status: 200,
 				headers: { "Content-Type": "text/plain" },
@@ -42,7 +44,9 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 	}
 	async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string) {
 		console.log(
-			`[WebSocket] Message: ${message}, connections: ${this.ctx.getWebSockets().length} ${ws.readyState}`,
+			`[WebSocket] Message: ${message}, connections: ${
+				this.ctx.getWebSockets().length
+			} ${ws.readyState}`,
 		);
 	}
 	async webSocketClose(
@@ -53,7 +57,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 	) {
 		console.log(`[WebSocket] Closed: ${code} ${reason} ${wasClean}`);
 		if (code === 1005) {
-			code = 1000;
+			ws.close(1000, `Unknown close code ${code}`);
 		}
 		ws.close(code, reason);
 	}

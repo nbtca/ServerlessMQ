@@ -1,7 +1,8 @@
-import { Bool, OpenAPIRoute, OpenAPIRouteSchema } from "chanfana";
-import { Context, HttpError } from "../types";
+import type { OpenAPIRouteSchema } from "chanfana";
+import { OpenAPIRoute } from "chanfana";
+import type { Context } from "../types";
 import { getServer } from "../utils";
-import { z, ZodError } from "zod";
+import { z } from "zod";
 export class Websocket extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
 		tags: ["Websocket"],

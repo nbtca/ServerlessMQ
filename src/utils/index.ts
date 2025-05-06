@@ -1,5 +1,5 @@
-import WebSocketServer from "../service/WebSocketServer";
-import { Context, HttpError } from "../types";
+import type WebSocketServer from "../service/websocketserver";
+import type { Context } from "../types";
 export function getServer(
 	c: Context<"/:topic">,
 ): DurableObjectStub<WebSocketServer> {

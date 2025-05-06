@@ -1,8 +1,8 @@
-import { Context as HonoContext } from "hono";
+import type { Context as HonoContext } from "hono";
 interface HTTPResponseError extends Error {
 	getResponse: () => Response;
 }
-interface Context<P extends string = any>
+interface Context<P extends string = string>
 	extends HonoContext<
 		{
 			Bindings: Env;
@@ -13,7 +13,7 @@ interface Context<P extends string = any>
 class HttpError extends Error implements HTTPResponseError {
 	constructor(
 		message: string,
-		public statusCode: number = 500,
+		public statusCode = 500,
 		public code?: string,
 	) {
 		super(message);

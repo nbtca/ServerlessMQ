@@ -1,5 +1,5 @@
-import { Bool, OpenAPIRoute } from "chanfana";
-import { Context, HttpError } from "../types";
+import { OpenAPIRoute } from "chanfana";
+import type { Context } from "../types";
 import { z } from "zod";
 import { validatePost } from "../utils/auth";
 import { getServer } from "../utils";

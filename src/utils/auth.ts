@@ -1,4 +1,5 @@
-import { Context, HttpError } from "../types";
+import type { Context } from "../types";
+import { HttpError } from "../types";
 function getEnvCaseInsensitive(env: Env, key: string): string | undefined {
 	const lowerKey = key.toLowerCase();
 	for (const [k, v] of Object.entries(env)) {
@@ -10,7 +11,7 @@ function getEnvCaseInsensitive(env: Env, key: string): string | undefined {
 }
 function getToken(env: Env, topic: string): string {
 	const secret =
-		getEnvCaseInsensitive(env, "TOKEN_" + topic) ?? env.GLOBAL_TOKEN;
+		getEnvCaseInsensitive(env, `TOKEN_${topic}`) ?? env.GLOBAL_TOKEN;
 	if (!secret) {
 		throw new HttpError("Missing webhook token in environment variables", 500);
 	}
@@ -18,7 +19,7 @@ function getToken(env: Env, topic: string): string {
 }
 function getSecret(env: Env, topic: string): string {
 	const secret =
-		getEnvCaseInsensitive(env, "SECRET_" + topic) ?? env.GLOBAL_SECRET;
+		getEnvCaseInsensitive(env, `SECRET_${topic}`) ?? env.GLOBAL_SECRET;
 	if (!secret) {
 		throw new HttpError("Missing webhook secret in environment variables", 500);
 	}
@@ -26,7 +27,7 @@ function getSecret(env: Env, topic: string): string {
 }
 async function validateToken(ctx: Context, topic: string) {
 	const { req, env } = ctx;
-	const authorization = req.header()["Authorization"];
+	const authorization = req.header("Authorization");
 	let token = authorization?.split(" ")[1];
 	if (!token) {
 		token = ctx.req.param("token");
