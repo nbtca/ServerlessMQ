@@ -2,6 +2,7 @@ import type { OpenAPIRouteSchema } from "chanfana";
 import { OpenAPIRoute } from "chanfana";
 import type { Context } from "../types";
 import { getServer } from "../utils";
+import { validateRequest as auth } from "../utils/auth";
 import { z } from "zod";
 export class Websocket extends OpenAPIRoute {
 	schema: OpenAPIRouteSchema = {
@@ -11,6 +12,9 @@ export class Websocket extends OpenAPIRoute {
 			params: z.object({
 				topic: z.string().min(1).max(100).describe("Topic name"),
 			}),
+			query: z.object({
+				token: z.string().optional().describe("Token for authentication"),
+			})
 		},
 		responses: {
 			101: {
@@ -25,7 +29,10 @@ export class Websocket extends OpenAPIRoute {
 				status: 426,
 			});
 		}
-		await this.validateRequest(c.req.raw);
+		const data = await this.getValidatedData<typeof this.schema>();
+		const topic = data.params.topic;
+		await auth(c, topic);
+		console.log("Websocket | ", topic);
 		const server = getServer(c);
 		return await server.fetch(c.req.raw);
 	}
