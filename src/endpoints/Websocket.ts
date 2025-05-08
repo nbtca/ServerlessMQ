@@ -14,7 +14,7 @@ export class Websocket extends OpenAPIRoute {
 			}),
 			query: z.object({
 				token: z.string().optional().describe("Token for authentication"),
-			})
+			}),
 		},
 		responses: {
 			101: {
