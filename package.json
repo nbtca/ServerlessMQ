@@ -7,7 +7,9 @@
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"cf-typegen": "wrangler types",
-		"format": "biome format  --write"
+		"format": "npx @biomejs/biome format --write ./src --staged",
+		"lint": "npx @biomejs/biome lint --fix ./src --staged",
+		"prepare": "husky"
 	},
 	"dependencies": {
 		"@scalar/hono-api-reference": "^0.8.8",
@@ -20,6 +22,16 @@
 		"@cloudflare/workers-types": "^4.20250506.0",
 		"@types/node": "22.13.0",
 		"@types/service-worker-mock": "^2.0.4",
+		"husky": "^9.1.7",
+		"lint-staged": "^15.5.2",
 		"wrangler": "^4.14.2"
+	},
+	"lint-staged": {
+		"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
+			"pnpx @biomejs/biome format --write ./src --no-errors-on-unmatched --staged"
+		]
+	},
+	"volta": {
+		"node": "24.0.0"
 	}
 }

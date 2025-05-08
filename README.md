@@ -5,6 +5,31 @@
 
 ---
 
+## 开发工具
+
+<https://biomejs.dev/>
+
+- 格式化（暂存区）代码
+
+```sh
+npm run format
+```
+
+- （暂存区）代码检查
+
+```sh
+npm run lint
+```
+
+> 全局格式化和 lint（如有必要）
+>
+> ```sh
+> npx @biomejs/biome format --write ./src
+> npx @biomejs/biome lint ./src --fix
+> ```
+
+---
+
 ## Cloudflare Workers OpenAPI 3.1
 
 This is a Cloudflare Worker with OpenAPI 3.1 using [chanfana](https://github.com/cloudflare/chanfana) and [Hono](https://github.com/honojs/hono).
