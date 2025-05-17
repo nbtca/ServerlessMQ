@@ -19,14 +19,14 @@
 	},
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
-		"@cloudflare/workers-types": "^4.20250506.0",
+		"@cloudflare/workers-types": "^4.20250517.0",
 		"@commitlint/cli": "^19.8.1",
 		"@commitlint/config-conventional": "^19.8.1",
 		"@types/node": "22.13.0",
 		"@types/service-worker-mock": "^2.0.4",
 		"husky": "^9.1.7",
-		"lint-staged": "^15.5.2",
-		"wrangler": "^4.14.2"
+		"lint-staged": "^16.0.0",
+		"wrangler": "^4.15.2"
 	},
 	"lint-staged": {
 		"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
