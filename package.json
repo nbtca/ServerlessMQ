@@ -20,6 +20,8 @@
 	"devDependencies": {
 		"@biomejs/biome": "1.9.4",
 		"@cloudflare/workers-types": "^4.20250506.0",
+		"@commitlint/cli": "^19.8.1",
+		"@commitlint/config-conventional": "^19.8.1",
 		"@types/node": "22.13.0",
 		"@types/service-worker-mock": "^2.0.4",
 		"husky": "^9.1.7",
