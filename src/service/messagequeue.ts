@@ -27,6 +27,13 @@ export class ClientInstance implements Client {
 		return this.uuid === other.uuid;
 	}
 }
+function fillAddress(client: Client, uuid: string) {
+	return (
+		(client.headers["cf-connecting-ip"]?.[0] ||
+			client.headers["x-forwarded-for"]?.[0]) ??
+		uuid
+	);
+}
 export default class MessageQueue {
 	constructor(
 		private readonly topic: string,
@@ -39,7 +46,7 @@ export default class MessageQueue {
 		const clientsInfo: ActiveBroadcastPacketDataClient[] = [];
 		for (const [uuid, clientInfo] of clients.entries()) {
 			clientsInfo.push({
-				address: uuid,
+				address: fillAddress(clientInfo, uuid),
 				headers: clientInfo.headers,
 			});
 		}

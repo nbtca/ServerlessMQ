@@ -102,14 +102,14 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 	async fetch(request: Request): Promise<Response> {
 		this._topic = request.url.split("/").pop() || "";
 		this._topic = this._topic.split("?")[0];
-		return this.initializeWebSocket(request);
+		return await this.initializeWebSocket(request);
 	}
 	async initializeWebSocket(request: Request): Promise<Response> {
 		const webSocketPair = new WebSocketPair();
 		const [client, server] = Object.values(webSocketPair);
 		const id = this.generateNewId();
 		this.ctx.acceptWebSocket(server, [id]);
-		this.webSocketConnected(server, request);
+		await this.webSocketConnected(server, request);
 		return new Response(null, {
 			status: 101,
 			webSocket: client,
