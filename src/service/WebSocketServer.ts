@@ -1,6 +1,23 @@
 import { DurableObject } from "cloudflare:workers";
 import MessageQueue, { ClientInstance } from "./messagequeue";
-import type { Client } from "./messagequeue";
+import type { Client as ClientInfo, HeadersType } from "./messagequeue";
+function mapHeaders(originalHeaders: Headers) {
+	const headers: HeadersType = {};
+	for (const [key, value] of originalHeaders) {
+		switch (key) {
+			case "sec-websocket-extensions":
+			case "sec-websocket-key":
+			case "sec-websocket-version":
+			case "upgrade":
+			case "connection":
+				continue;
+			default:
+				headers[key] = headers[key] || [];
+				headers[key].push(value);
+		}
+	}
+	return headers;
+}
 export class WebSocketHibernationServer extends DurableObject<Env> {
 	private _topic: string;
 	public get topic() {
@@ -9,20 +26,52 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 	public get mq() {
 		return new MessageQueue(this.topic, this);
 	}
-	public get clients() {
+	get clients() {
 		return this.clientsList;
 	}
-	private clientsList: Map<WebSocket, Client> = new Map();
+	private clientsList: Map<string, ClientInfo> = new Map();
+	getInfoFromId(id: string): ClientInfo | undefined {
+		return this.clientsList.get(id);
+	}
+	private readonly idPrefix: string = "websocket_";
+	generateNewId() {
+		return `${this.idPrefix}${crypto.randomUUID()}`;
+	}
+	getWebsocketClient(id: string): WebSocket | undefined {
+		for (const ws of this.ctx.getWebSockets(id)) {
+			return ws;
+		}
+	}
+	getIdFromClient(client: WebSocket): string {
+		for (const tag of this.ctx.getTags(client)) {
+			if (tag.startsWith(this.idPrefix)) {
+				return tag;
+			}
+		}
+		throw new Error("Client not found: missing websocket tag");
+	}
 	foreachClient(callback: (client: ClientInstance) => void) {
-		for (const [ws, client] of this.clientsList.entries()) {
-			callback(new ClientInstance(ws, client.headers));
+		for (const [uuid, clientInfo] of this.clientsList.entries()) {
+			callback(
+				new ClientInstance(
+					uuid,
+					this.getWebsocketClient(uuid),
+					clientInfo.headers,
+				),
+			);
 		}
 	}
 	async foreachClientAsync(
 		callback: (client: ClientInstance) => Promise<void>,
 	) {
-		for (const [ws, client] of this.clientsList.entries()) {
-			await callback(new ClientInstance(ws, client.headers));
+		for (const [uuid, clientInfo] of this.clientsList.entries()) {
+			await callback(
+				new ClientInstance(
+					uuid,
+					this.getWebsocketClient(uuid),
+					clientInfo.headers,
+				),
+			);
 		}
 	}
 	async saveMessage(request: Request): Promise<Response> {
@@ -58,7 +107,8 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 	async initializeWebSocket(request: Request): Promise<Response> {
 		const webSocketPair = new WebSocketPair();
 		const [client, server] = Object.values(webSocketPair);
-		this.ctx.acceptWebSocket(server);
+		const id = this.generateNewId();
+		this.ctx.acceptWebSocket(server, [id]);
 		this.webSocketConnected(server, request);
 		return new Response(null, {
 			status: 101,
@@ -71,35 +121,27 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 				this.ctx.getWebSockets().length
 			}`,
 		);
-		const headers: Record<string, string> = {};
-		for (const [key, value] of request.headers) {
-			switch (key) {
-				case "sec-websocket-extensions":
-				case "sec-websocket-key":
-				case "sec-websocket-version":
-				case "upgrade":
-					continue;
-				default:
-					headers[key] = value;
-			}
-		}
-		this.clientsList.set(ws, { headers: headers });
-		const info = this.clientsList.get(ws);
-		this.mq.onNewClient(new ClientInstance(ws, info.headers), request);
+		const headers = mapHeaders(request.headers);
+		const id = this.getIdFromClient(ws);
+		this.clientsList.set(id, { headers: headers });
+		const info = this.getInfoFromId(id);
+		await this.mq.onNewClient(
+			new ClientInstance(id, ws, info.headers),
+			request,
+		);
 	}
-	async webSocketMessage(ws: WebSocket, message: ArrayBuffer | string) {
+	async webSocketMessage(ws: WebSocket, data: ArrayBuffer | string) {
 		console.log(
-			`[WebSocket] Message: ${message}, connections: ${
+			`[WebSocket] Message: ${data}, connections: ${
 				this.ctx.getWebSockets().length
 			} ${ws.readyState}`,
 		);
-		const info = this.clientsList.get(ws);
-		if (typeof message === "string") {
-			this.mq.onReceiveMessage(
-				new ClientInstance(ws, info.headers),
-				JSON.parse(message),
-			);
-		}
+		const id = this.getIdFromClient(ws);
+		const info = this.getInfoFromId(id);
+		await this.mq.onReceiveMessage(
+			new ClientInstance(id, ws, info.headers),
+			data,
+		);
 	}
 	async webSocketClose(
 		ws: WebSocket,
@@ -108,9 +150,14 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		wasClean: boolean,
 	) {
 		console.log(`[WebSocket] Closed: ${code} ${reason} ${wasClean}`);
-		const info = this.clientsList.get(ws);
-		this.clientsList.delete(ws);
-		this.mq.onClose(new ClientInstance(ws, info.headers), code, reason);
+		const id = this.getIdFromClient(ws);
+		const info = this.getInfoFromId(id);
+		this.clientsList.delete(id);
+		await this.mq.onClose(
+			new ClientInstance(id, ws, info.headers),
+			code,
+			reason,
+		);
 		if (code === 1005 || code === 1006) {
 			ws.close(1000, `Unknown close code ${code} ${reason}`);
 		}

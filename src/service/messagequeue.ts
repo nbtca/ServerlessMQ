@@ -1,19 +1,30 @@
-import { ActiveBroadcastPacket } from "../types";
+import {
+	ActiveBroadcastPacket,
+	type ActiveBroadcastPacketDataClient,
+	type Packet,
+} from "../types";
 import type WebSocketHibernationServer from "./websocketserver";
+export type HeadersType = Record<string, string[]>;
 export interface Client {
-	headers: Record<string, string>;
+	headers: HeadersType;
 }
 export class ClientInstance implements Client {
-	send(text: string) {
-		this.client.send(text);
+	sendRaw(data: ArrayBuffer | string) {
+		this.client.send(data);
+	}
+	sendUnknown(pkt: unknown) {
+		this.sendRaw(JSON.stringify(pkt));
+	}
+	sendPacket(pkt: Packet) {
+		this.sendRaw(JSON.stringify(pkt));
 	}
 	constructor(
+		public uuid: string,
 		public client: WebSocket,
-		public headers: Record<string, string>,
+		public headers: HeadersType,
 	) {}
-	// equal
 	equals(other: ClientInstance): boolean {
-		return this.client === other.client;
+		return this.uuid === other.uuid;
 	}
 }
 export default class MessageQueue {
@@ -23,44 +34,44 @@ export default class MessageQueue {
 			| DurableObjectStub<WebSocketHibernationServer>
 			| WebSocketHibernationServer,
 	) {}
+	async broadcastClientChange() {
+		const clients = await this.server.clients;
+		const clientsInfo: ActiveBroadcastPacketDataClient[] = [];
+		for (const [uuid, clientInfo] of clients.entries()) {
+			clientsInfo.push({
+				address: uuid,
+				headers: clientInfo.headers,
+			});
+		}
+		const pkt = new ActiveBroadcastPacket({
+			clients: clientsInfo,
+		});
+		await this.server.foreachClient((client) => {
+			client.sendPacket(pkt);
+		});
+	}
 	async onNewClient(client: ClientInstance, request: Request) {
 		// Handle new client connection
 		console.log("New client connected", this.topic);
-		// Send a welcome message to the client
-		// await this.server.foreachClient((client) => {
-		//   console.log("Sending welcome message to client", client);
-		// });
-		client.send(
-			JSON.stringify({
-				topic: this.topic,
-				message: "Welcome to the message queue",
-				headers: client.headers,
-			}),
-		);
+		await this.broadcastClientChange();
 	}
-	onReceiveMessage(client: ClientInstance, data: unknown) {
+	async onReceiveMessage(client: ClientInstance, data: ArrayBuffer | string) {
 		// Handle incoming message
-		console.log("Received message", this.topic, data);
-		// Send a response back to the client
-		// client.send(JSON.stringify({ topic: this.topic, data }));
-		this.server.foreachClient((target) => {
+		if (typeof data === "string") {
+			console.log("Received message", this.topic, data);
+		}
+		// broadcast to all clients except the sender
+		await this.server.foreachClient((target) => {
 			if (target.equals(client)) {
 				return;
 			}
-			target.send(
-				JSON.stringify({
-					from: {
-						headers: target.headers,
-					},
-					topic: this.topic,
-					data: data,
-				}),
-			);
+			target.sendRaw(data);
 		});
 	}
-	onClose(client: ClientInstance, code: number, reason: string) {
+	async onClose(client: ClientInstance, code: number, reason: string) {
 		// Handle client close
 		console.log("Client closed", this.topic, code, reason);
+		await this.broadcastClientChange();
 	}
 	onWebhookPost(data: unknown) {
 		// Handle webhook post
