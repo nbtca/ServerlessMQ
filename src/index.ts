@@ -23,6 +23,7 @@ app.onError(async (err, c) => {
 			{ status: 400 },
 		);
 	}
+	console.error(err);
 	return Response.json(
 		{
 			error: "Internal Server Error",

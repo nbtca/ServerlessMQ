@@ -9,7 +9,7 @@
 		"resolveJsonModule": true,
 		"moduleDetection": "force",
 		/* Strictness */
-		"noImplicitAny": false,
+		"noImplicitAny": true,
 		"noImplicitThis": true,
 		"strictNullChecks": false,
 		"strict": true,

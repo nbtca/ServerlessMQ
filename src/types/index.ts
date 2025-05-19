@@ -7,5 +7,5 @@ interface Context<P extends string = string>
 		P
 	> {}
 export type { Context };
-export * from "./pkt";
+export * from "./packet";
 export * from "./error";

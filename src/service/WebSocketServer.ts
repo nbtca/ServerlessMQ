@@ -1,23 +1,8 @@
 import { DurableObject } from "cloudflare:workers";
 import MessageQueue, { ClientInstance } from "./messagequeue";
-import type { Client as ClientInfo, HeadersType } from "./messagequeue";
-function mapHeaders(originalHeaders: Headers) {
-	const headers: HeadersType = {};
-	for (const [key, value] of originalHeaders) {
-		switch (key) {
-			case "sec-websocket-extensions":
-			case "sec-websocket-key":
-			case "sec-websocket-version":
-			case "upgrade":
-			case "connection":
-				continue;
-			default:
-				headers[key] = headers[key] || [];
-				headers[key].push(value);
-		}
-	}
-	return headers;
-}
+import type { Client as ClientInfo } from "./messagequeue";
+import { extractTopicFromPath } from "../utils";
+import { mapHeaders } from "../utils/req";
 export class WebSocketHibernationServer extends DurableObject<Env> {
 	private _topic: string;
 	public get topic() {
@@ -29,18 +14,23 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 	get clients() {
 		return this.clientsList;
 	}
-	private clientsList: Map<string, ClientInfo> = new Map();
-	getInfoFromId(id: string): ClientInfo | undefined {
-		return this.clientsList.get(id);
+	private clientsList: Record<string, ClientInfo> = {};
+	getInfoFromId(id: string): ClientInfo {
+		const info = this.clientsList[id];
+		if (info) {
+			return info;
+		}
+		throw new Error(`[getInfoFromId] WebSocket ${id} not found`);
 	}
 	private readonly idPrefix: string = "websocket_";
 	generateNewId() {
 		return `${this.idPrefix}${crypto.randomUUID()}`;
 	}
-	getWebsocketClient(id: string): WebSocket | undefined {
+	getWebsocketClient(id: string): WebSocket {
 		for (const ws of this.ctx.getWebSockets(id)) {
 			return ws;
 		}
+		throw new Error(`[getWebsocketClient] WebSocket ${id} not found`);
 	}
 	getIdFromClient(client: WebSocket): string {
 		for (const tag of this.ctx.getTags(client)) {
@@ -50,28 +40,12 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		}
 		throw new Error("Client not found: missing websocket tag");
 	}
-	foreachClient(callback: (client: ClientInstance) => void) {
-		for (const [uuid, clientInfo] of this.clientsList.entries()) {
-			callback(
-				new ClientInstance(
-					uuid,
-					this.getWebsocketClient(uuid),
-					clientInfo.headers,
-				),
-			);
-		}
-	}
-	async foreachClientAsync(
-		callback: (client: ClientInstance) => Promise<void>,
-	) {
-		for (const [uuid, clientInfo] of this.clientsList.entries()) {
-			await callback(
-				new ClientInstance(
-					uuid,
-					this.getWebsocketClient(uuid),
-					clientInfo.headers,
-				),
-			);
+	async sendToClient(uuid: string, data: ArrayBuffer | string) {
+		const ws = this.getWebsocketClient(uuid);
+		if (ws) {
+			ws.send(data);
+		} else {
+			throw new Error(`Client ${uuid} not found`);
 		}
 	}
 	async saveMessage(request: Request): Promise<Response> {
@@ -100,8 +74,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		);
 	}
 	async fetch(request: Request): Promise<Response> {
-		this._topic = request.url.split("/").pop() || "";
-		this._topic = this._topic.split("?")[0];
+		this._topic = extractTopicFromPath(request.url);
 		return await this.initializeWebSocket(request);
 	}
 	async initializeWebSocket(request: Request): Promise<Response> {
@@ -123,10 +96,10 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		);
 		const headers = mapHeaders(request.headers);
 		const id = this.getIdFromClient(ws);
-		this.clientsList.set(id, { headers: headers });
+		this.clientsList[id] = { headers: headers };
 		const info = this.getInfoFromId(id);
 		await this.mq.onNewClient(
-			new ClientInstance(id, ws, info.headers),
+			ClientInstance.from(id, ws, info.headers),
 			request,
 		);
 	}
@@ -139,7 +112,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		const id = this.getIdFromClient(ws);
 		const info = this.getInfoFromId(id);
 		await this.mq.onReceiveMessage(
-			new ClientInstance(id, ws, info.headers),
+			ClientInstance.from(id, ws, info.headers),
 			data,
 		);
 	}
@@ -152,9 +125,9 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		console.log(`[WebSocket] Closed: ${code} ${reason} ${wasClean}`);
 		const id = this.getIdFromClient(ws);
 		const info = this.getInfoFromId(id);
-		this.clientsList.delete(id);
+		delete this.clientsList[id];
 		await this.mq.onClose(
-			new ClientInstance(id, ws, info.headers),
+			ClientInstance.from(id, ws, info.headers),
 			code,
 			reason,
 		);

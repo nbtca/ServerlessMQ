@@ -18,7 +18,7 @@ export class Webhook extends OpenAPIRoute {
 				content: {
 					"application/json": {
 						//any json data
-						schema: z.object({}),
+						schema: z.unknown(),
 					},
 				},
 			},
@@ -38,12 +38,11 @@ export class Webhook extends OpenAPIRoute {
 	};
 	async handle(c: Context<"/:topic">) {
 		const data = await this.getValidatedData<typeof this.schema>();
-		const body = data.body;
+		const body = await data.body;
 		const topic = data.params.topic;
 		await auth(c, topic, c.req.text);
-		console.log("Webhook | ", topic, body);
 		const mq = getMQ(c);
-		mq.onWebhookPost(body);
+		await mq.onWebhookPost(c.req.raw, body);
 		return {
 			success: true,
 		};
