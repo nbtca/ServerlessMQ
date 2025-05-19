@@ -42,9 +42,10 @@ export class Webhook extends OpenAPIRoute {
 		const topic = data.params.topic;
 		await auth(c, topic, c.req.text);
 		const mq = getMQ(c);
-		await mq.onWebhookPost(c.req.raw, body);
+		const count = await mq.onWebhookPost(c.req.raw, body);
 		return {
 			success: true,
+			count,
 		};
 	}
 }

@@ -120,11 +120,15 @@ export default class MessageQueue {
 			});
 			// broadcast to all clients
 			const pktStr = JSON.stringify(pkt);
+			let count = 0;
 			await this.foreachClient((client) => {
 				client.sendRaw(pktStr);
+				count++;
 			});
+			return count;
 		} catch (error) {
 			console.log(error);
+			return 0;
 		}
 	}
 }
