@@ -11,15 +11,30 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 	public get mq() {
 		return new MessageQueue(this.topic, this);
 	}
-	get clients() {
-		return this.clientsList;
+	get clients(): Record<string, ClientInfo> {
+		// return this.clientsList;
+		const clients: Record<string, ClientInfo> = {};
+		for (const ws of this.ctx.getWebSockets()) {
+			const id = this.getIdFromClient(ws);
+			clients[id] = ws.deserializeAttachment();
+		}
+		return clients;
 	}
-	private clientsList: Record<string, ClientInfo> = {};
+	// private clientsList: Record<string, ClientInfo> = {};
+	onNewClient(id: string, info: ClientInfo) {
+		// this.clientsList[id] = info;
+		const client = this.getWebsocketClient(id);
+		client.serializeAttachment(info);
+	}
+	onRemoveClient(id: string) {
+		// delete this.clientsList[id];
+	}
 	getInfoFromId(id: string): ClientInfo {
-		const info = this.clientsList[id];
+		const info = this.clients[id];
 		if (info) {
 			return info;
 		}
+		console.log(this.clients);
 		throw new Error(`[getInfoFromId] WebSocket ${id} not found`);
 	}
 	private readonly idPrefix: string = "websocket_";
@@ -30,6 +45,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		for (const ws of this.ctx.getWebSockets(id)) {
 			return ws;
 		}
+		console.log(this.clients);
 		throw new Error(`[getWebsocketClient] WebSocket ${id} not found`);
 	}
 	getIdFromClient(client: WebSocket): string {
@@ -38,6 +54,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 				return tag;
 			}
 		}
+		console.log(this.clients);
 		throw new Error("Client not found: missing websocket tag");
 	}
 	async sendToClient(uuid: string, data: ArrayBuffer | string) {
@@ -96,7 +113,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		);
 		const headers = mapHeaders(request.headers);
 		const id = this.getIdFromClient(ws);
-		this.clientsList[id] = { headers: headers };
+		this.onNewClient(id, { headers: headers });
 		const info = this.getInfoFromId(id);
 		await this.mq.onNewClient(
 			ClientInstance.from(id, ws, info.headers),
@@ -107,7 +124,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		console.log(
 			`[WebSocket] Message: ${data}, connections: ${
 				this.ctx.getWebSockets().length
-			} ${ws.readyState}`,
+			} ${this.clients.length}`,
 		);
 		const id = this.getIdFromClient(ws);
 		const info = this.getInfoFromId(id);
@@ -123,14 +140,21 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		wasClean: boolean,
 	) {
 		console.log(`[WebSocket] Closed: ${code} ${reason} ${wasClean}`);
-		const id = this.getIdFromClient(ws);
-		const info = this.getInfoFromId(id);
-		delete this.clientsList[id];
-		await this.mq.onClose(
-			ClientInstance.from(id, ws, info.headers),
-			code,
-			reason,
-		);
+		try {
+			const id = this.getIdFromClient(ws);
+			try {
+				const info = this.getInfoFromId(id);
+				await this.mq.onClose(
+					ClientInstance.from(id, ws, info.headers),
+					code,
+					reason,
+				);
+			} finally {
+				this.onRemoveClient(id);
+			}
+		} catch (error) {
+			console.error("[WebSocket] Error on close", error);
+		}
 		if (code === 1005 || code === 1006) {
 			ws.close(1000, `Unknown close code ${code} ${reason}`);
 		}
