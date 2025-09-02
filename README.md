@@ -3,6 +3,10 @@
 > A serverless message queue for Cloudflare Workers
 > Based on [Durable Objects](https://developers.cloudflare.com/durable-objects/api/).
 
+## 项目简介
+
+这是一个基于 [Durable Objects](https://developers.cloudflare.com/durable-objects/api/) 的无服务器消息队列，旨在基于 Cloudflare Workers 提供简单的消息处理能力。
+
 ---
 
 ## 接入流程
