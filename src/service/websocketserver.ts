@@ -12,6 +12,9 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 	public get mq() {
 		return new MessageQueue(this.topic, this);
 	}
+	async storageSql(query: string, ...bindings: unknown[]) {
+		return this.ctx.storage.sql.exec(query, ...bindings);
+	}
 	get clients(): Record<string, ClientInfo> {
 		// return this.clientsList;
 		const clients: Record<string, ClientInfo> = {};
