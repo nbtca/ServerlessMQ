@@ -1,11 +1,9 @@
 import {
 	ActiveBroadcastPacket,
-	type Context,
 	type ActiveBroadcastPacketDataClient,
-	type Packet,
 } from "../types";
 import { WebhookPacket } from "../types/packet/webhook";
-import { mapHeaders, type HeadersType } from "../utils/req";
+import { mapHeaders } from "../utils/req";
 import { type Client, ClientInstance } from "./client";
 import type WebSocketHibernationServer from "./websocketserver";
 
@@ -101,5 +99,8 @@ export default class MessageQueue {
 			console.log(error);
 			return 0;
 		}
+	}
+	async onError(client: ClientInstance, error: unknown) {
+		console.error("WebSocket error:", error);
 	}
 }

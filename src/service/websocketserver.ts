@@ -1,6 +1,7 @@
 import { DurableObject } from "cloudflare:workers";
-import MessageQueue, { ClientInstance } from "./messagequeue";
-import type { Client as ClientInfo } from "./messagequeue";
+import MessageQueue from "./messagequeue";
+import { ClientInstance } from "./client";
+import type { Client as ClientInfo } from "./client";
 import { extractTopicFromPath } from "../utils";
 import { mapHeaders } from "../utils/req";
 export class WebSocketHibernationServer extends DurableObject<Env> {
@@ -159,6 +160,18 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 			ws.close(1000, `Unknown close code ${code} ${reason}`);
 		}
 		ws.close(code, reason);
+	}
+
+	async webSocketError(ws: WebSocket, error: unknown) {
+		console.error("[WebSocket] Error:", error);
+		try {
+			const id = this.getIdFromClient(ws);
+			const info = this.getInfoFromId(id);
+			await this.mq.onError(ClientInstance.from(id, ws, info.headers), error);
+		} catch (clientError) {
+			console.error("[WebSocket] Error handling client error:", clientError);
+		}
+		ws.close(1011, "Internal server error");
 	}
 }
 export default WebSocketHibernationServer;
