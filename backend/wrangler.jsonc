@@ -12,7 +12,11 @@
 	},
 	"vars": {
 		"GLOBAL_SECRET": "test",
-		"GLOBAL_TOKEN": "test"
+		"GLOBAL_TOKEN": "test",
+		"TOPIC_MC": "true",
+		"TOPIC_MC_PASSWORD": "mc123",
+		"TOPIC_TEST": "true",
+		"TOPIC_TEST_PASSWORD": "test123"
 	},
 	"d1_databases": [
 		{

@@ -3,6 +3,7 @@ import { Hono } from "hono";
 import { Scalar } from "@scalar/hono-api-reference";
 import { Webhook } from "./endpoints/webhook";
 import { Websocket } from "./endpoints/websocket";
+import { LogsEndpoint } from "./endpoints/logs";
 import WebSocketServer from "./service/websocketserver";
 import { HttpError } from "./types";
 import { getServer } from "./utils";
@@ -67,6 +68,7 @@ app.get("/docs", Scalar({ url: openapiUrl }));
 // API routes
 openapi.post("/:topic", Webhook);
 openapi.get("/:topic", Websocket);
+openapi.get("/:topic/logs", LogsEndpoint);
 
 // Serve static files - handle root path and static assets
 app.get("/", async (c) => {
