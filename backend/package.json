@@ -8,6 +8,7 @@
 		"dev": "wrangler dev",
 		"start": "wrangler dev",
 		"cf-typegen": "wrangler types",
+		"build": "pnpm run build:frontend && pnpm run embed:client && wrangler build",
 		"build:frontend": "pnpm --filter serverless-mq-frontend build",
 		"embed:client": "pnpm run build:frontend"
 	},
