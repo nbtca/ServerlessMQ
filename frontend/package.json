@@ -10,12 +10,15 @@
         "lint:fix": "eslint . --ext ts,tsx --fix"
     },
     "dependencies": {
-        "react": "^19.1.1",
-        "react-dom": "^19.1.1"
+        "@fluentui/react": "^8.119.4",
+        "@fluentui/react-components": "^9.59.2",
+        "@fluentui/react-icons": "^2.0.254",
+        "react": "^18.2.0",
+        "react-dom": "^18.2.0"
     },
     "devDependencies": {
-        "@types/react": "^19.1.12",
-        "@types/react-dom": "^19.1.9",
+        "@types/react": "^18.2.66",
+        "@types/react-dom": "^18.2.22",
         "@typescript-eslint/eslint-plugin": "^8.42.0",
         "@typescript-eslint/parser": "^8.42.0",
         "@vitejs/plugin-react": "^5.0.2",
