@@ -1,0 +1,25 @@
+{
+	"name": "serverless-mq-backend",
+	"version": "0.0.1",
+	"private": true,
+	"scripts": {
+		"deploy": "wrangler deploy",
+		"dev": "wrangler dev",
+		"start": "wrangler dev",
+		"cf-typegen": "wrangler types",
+		"build:frontend": "pnpm --filter serverless-mq-frontend build",
+		"embed:client": "pnpm run build:frontend"
+	},
+	"dependencies": {
+		"@scalar/hono-api-reference": "^0.9.16",
+		"chanfana": "^2.8.2",
+		"hono": "^4.9.5",
+		"zod": "^3.25.76"
+	},
+	"devDependencies": {
+		"@cloudflare/workers-types": "^4.20250902.0",
+		"@types/node": "24.3.0",
+		"@types/service-worker-mock": "^2.0.4",
+		"wrangler": "^4.33.1"
+	}
+}

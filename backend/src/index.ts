@@ -20,7 +20,7 @@ app.onError(async (err, c) => {
 				error: "Invalid request",
 				message: err.errors,
 			},
-			{ status: 400 },
+			{ status: 400 }
 		);
 	}
 	console.error(err);
@@ -30,7 +30,7 @@ app.onError(async (err, c) => {
 			message: err.message,
 			// stack: err.stack,
 		},
-		{ status: 500 },
+		{ status: 500 }
 	);
 });
 // This is a workaround for the CORS issue
@@ -38,11 +38,11 @@ app.use("*", async (c, next) => {
 	c.res.headers.set("Access-Control-Allow-Origin", "*");
 	c.res.headers.set(
 		"Access-Control-Allow-Methods",
-		"GET, POST, PUT, DELETE, OPTIONS",
+		"GET, POST, PUT, DELETE, OPTIONS"
 	);
 	c.res.headers.set(
 		"Access-Control-Allow-Headers",
-		"Content-Type, Authorization",
+		"Content-Type, Authorization"
 	);
 	if (c.req.method === "OPTIONS") {
 		return c.newResponse("OK", 200, {
@@ -60,8 +60,65 @@ const openapi = fromHono(app, {
 	docs_url: null,
 	redoc_url: "docs",
 });
-app.get("/", Scalar({ url: openapiUrl }));
+
+// API documentation route
+app.get("/docs", Scalar({ url: openapiUrl }));
+
+// API routes
 openapi.post("/:topic", Webhook);
 openapi.get("/:topic", Websocket);
+
+// Serve static files - handle root path and static assets
+app.get("/", async (c) => {
+	try {
+		// Try to get the index.html from the assets binding
+		if (c.env.ASSETS) {
+			const indexHtml = await c.env.ASSETS.fetch(
+				new Request("https://example.com/index.html")
+			);
+			if (indexHtml.ok) {
+				return new Response(await indexHtml.text(), {
+					headers: { "Content-Type": "text/html" },
+				});
+			}
+		}
+	} catch (error) {
+		console.log("Assets not available in development:", error);
+	}
+
+	// Fallback to API documentation in development
+	return c.html(`
+		<!DOCTYPE html>
+		<html>
+		<head>
+			<title>ServerlessMQ</title>
+			<meta charset="UTF-8">
+		</head>
+		<body>
+			<h1>ServerlessMQ</h1>
+			<p>Frontend not available in development mode.</p>
+			<p><a href="/docs">View API Documentation</a></p>
+		</body>
+		</html>
+	`);
+});
+
+// Serve other static assets
+app.get("/assets/*", async (c) => {
+	try {
+		if (c.env.ASSETS) {
+			const url = new URL(c.req.url);
+			const assetResponse = await c.env.ASSETS.fetch(
+				new Request(`https://example.com${url.pathname}`)
+			);
+			if (assetResponse.ok) {
+				return assetResponse;
+			}
+		}
+	} catch (error) {
+		console.log("Asset not found:", error);
+	}
+	return c.notFound();
+});
 export default app;
 export { WebSocketServer };

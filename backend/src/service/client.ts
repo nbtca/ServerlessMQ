@@ -9,14 +9,14 @@ export class ClientInstance implements Client {
 	public static from(
 		uuid: string,
 		client: WebSocket,
-		headers: HeadersType,
+		headers: HeadersType
 	): ClientInstance {
 		return new ClientInstance(uuid, (data) => client.send(data), headers);
 	}
 	constructor(
 		public uuid: string,
 		sendFunc: (data: ArrayBuffer | string) => void,
-		public headers: HeadersType,
+		public headers: HeadersType
 	) {
 		this._send = sendFunc;
 	}

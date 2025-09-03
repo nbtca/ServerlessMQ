@@ -96,7 +96,7 @@ async function validateSignature(ctx: Context, topic: string) {
 async function verifySignature(
 	secret: string,
 	signature: string,
-	payload: string,
+	payload: string
 ): Promise<boolean> {
 	// The signature starts with "sha256="
 	const sigParts = signature.split("=");
@@ -144,7 +144,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 async function validateRequest(
 	ctx: Context,
 	topic: string,
-	getBody?: () => Promise<string>,
+	getBody?: () => Promise<string>
 ) {
 	const { req, env } = ctx;
 	if (req.method === "GET") {
@@ -157,7 +157,7 @@ async function validateRequest(
 	if (!secret && !token) {
 		throw new HttpError(
 			"Missing webhook secret and token in environment variables",
-			500,
+			500
 		);
 	}
 	const reqToken = tryGetAuthTokenFromRequest(req);
@@ -181,7 +181,7 @@ async function validateRequest(
 	if (!reqToken && !reqSignature) {
 		throw new HttpError(
 			"Missing Authorization header or X-*-Signature-256 header in request",
-			401,
+			401
 		);
 	}
 	throw new HttpError("Internal server error: validateRequest", 500);

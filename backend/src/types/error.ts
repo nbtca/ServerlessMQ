@@ -5,7 +5,7 @@ class HttpError extends Error implements HTTPResponseError {
 	constructor(
 		message: string,
 		public statusCode = 500,
-		public code?: string,
+		public code?: string
 	) {
 		super(message);
 		this.name = "HttpError";

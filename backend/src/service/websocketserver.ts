@@ -81,7 +81,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		for (const ws of webSockets) {
 			// Send the message to all connected WebSockets
 			ws.send(
-				`[Durable Object] message: ${data}, connections: ${webSockets.length}`,
+				`[Durable Object] message: ${data}, connections: ${webSockets.length}`
 			);
 		}
 		return new Response(
@@ -91,7 +91,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 			{
 				status: 200,
 				headers: { "Content-Type": "text/plain" },
-			},
+			}
 		);
 	}
 	async fetch(request: Request): Promise<Response> {
@@ -113,7 +113,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		console.log(
 			`[WebSocket] Connected: ${ws.url}, connections: ${
 				this.ctx.getWebSockets().length
-			}`,
+			}`
 		);
 		const headers = mapHeaders(request.headers);
 		const id = this.getIdFromClient(ws);
@@ -121,27 +121,27 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		const info = this.getInfoFromId(id);
 		await this.mq.onNewClient(
 			ClientInstance.from(id, ws, info.headers),
-			request,
+			request
 		);
 	}
 	async webSocketMessage(ws: WebSocket, data: ArrayBuffer | string) {
 		console.log(
 			`[WebSocket] Message: ${data}, connections: ${
 				this.ctx.getWebSockets().length
-			} ${this.clients.length}`,
+			} ${this.clients.length}`
 		);
 		const id = this.getIdFromClient(ws);
 		const info = this.getInfoFromId(id);
 		await this.mq.onReceiveMessage(
 			ClientInstance.from(id, ws, info.headers),
-			data,
+			data
 		);
 	}
 	async webSocketClose(
 		ws: WebSocket,
 		code: number,
 		reason: string,
-		wasClean: boolean,
+		wasClean: boolean
 	) {
 		console.log(`[WebSocket] Closed: ${code} ${reason} ${wasClean}`);
 		try {
@@ -151,7 +151,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 				await this.mq.onClose(
 					ClientInstance.from(id, ws, info.headers),
 					code,
-					reason,
+					reason
 				);
 			} finally {
 				this.onRemoveClient(id);

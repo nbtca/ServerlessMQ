@@ -1,36 +1,32 @@
 {
-	"name": "serverless-mq",
+	"name": "serverless-mq-workspace",
 	"version": "0.0.1",
 	"private": true,
+	"description": "ServerlessMQ workspace with backend and frontend",
 	"scripts": {
-		"deploy": "wrangler deploy",
-		"dev": "wrangler dev",
-		"start": "wrangler dev",
-		"cf-typegen": "wrangler types",
-		"format": "npx @biomejs/biome format --write ./src --staged",
-		"lint": "npx @biomejs/biome lint --fix ./src --staged",
-		"prepare": "husky"
-	},
-	"dependencies": {
-		"@scalar/hono-api-reference": "^0.9.16",
-		"chanfana": "^2.8.2",
-		"hono": "^4.9.5",
-		"zod": "^3.25.76"
+		"dev": "pnpm --filter serverless-mq-backend dev",
+		"dev:frontend": "pnpm --filter serverless-mq-frontend dev",
+		"build": "pnpm --filter serverless-mq-frontend build && pnpm --filter serverless-mq-backend deploy",
+		"build:frontend": "pnpm --filter serverless-mq-frontend build",
+		"deploy": "pnpm --filter serverless-mq-backend deploy",
+		"format": "npx @biomejs/biome format --write ./backend/src ./frontend/src --staged",
+		"lint": "npx @biomejs/biome lint --fix ./backend/src --staged && pnpm --filter serverless-mq-frontend lint:fix",
+		"prepare": "husky",
+		"cf-typegen": "pnpm --filter serverless-mq-backend cf-typegen"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.2.2",
-		"@cloudflare/workers-types": "^4.20250902.0",
 		"@commitlint/cli": "^19.8.1",
 		"@commitlint/config-conventional": "^19.8.1",
-		"@types/node": "24.3.0",
-		"@types/service-worker-mock": "^2.0.4",
 		"husky": "^9.1.7",
-		"lint-staged": "^16.1.6",
-		"wrangler": "^4.33.1"
+		"lint-staged": "^16.1.6"
 	},
 	"lint-staged": {
-		"*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
-			"pnpx @biomejs/biome format --write ./src --no-errors-on-unmatched --staged"
+		"backend/**/*.{js,ts,cjs,mjs,d.cts,d.mts,jsx,tsx,json,jsonc}": [
+			"pnpx @biomejs/biome format --write --no-errors-on-unmatched --staged"
+		],
+		"frontend/**/*.{ts,tsx}": [
+			"pnpm --filter frontend lint:fix"
 		]
 	},
 	"volta": {

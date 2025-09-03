@@ -4,7 +4,7 @@ import type { Context } from "../types";
 // https://github.com/honojs/hono/blob/dfacf89663445b3196219d95311831afb00a6700/src/utils/url.ts#L132
 import { getPathNoStrict, splitPath } from "hono/utils/url";
 export function getServer(
-	c: Context<"/:topic">,
+	c: Context<"/:topic">
 ): DurableObjectStub<WebSocketServer> {
 	const topic = c.req.param("topic");
 	const id = c.env.WebSocketServer.idFromName(topic);

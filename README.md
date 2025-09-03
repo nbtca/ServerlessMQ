@@ -7,7 +7,40 @@
 
 这是一个基于 [Durable Objects](https://developers.cloudflare.com/durable-objects/api/) 的无服务器消息队列，旨在基于 Cloudflare Workers 提供简单的消息处理能力。
 
+## 项目结构
+
+这是一个使用 pnpm workspace 管理的 monorepo 项目：
+
+- `backend/` - Cloudflare Workers 后端服务
+- `frontend/` - React 前端应用
+- 根目录包含共享的工具配置（husky、commitlint、biome等）
+
 ---
+
+## 开发命令
+
+```bash
+# 安装依赖
+pnpm install
+
+# 启动后端开发服务器
+pnpm dev
+
+# 启动前端开发服务器
+pnpm dev:frontend
+
+# 构建前端
+pnpm build:frontend
+
+# 部署到生产环境
+pnpm deploy
+
+# 代码格式化
+pnpm format
+
+# 代码检查
+pnpm lint
+```
 
 ## 接入流程
 

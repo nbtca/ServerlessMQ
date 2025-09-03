@@ -19,10 +19,10 @@ export default class MessageQueue {
 		private readonly topic: string,
 		public server:
 			| DurableObjectStub<WebSocketHibernationServer>
-			| WebSocketHibernationServer,
+			| WebSocketHibernationServer
 	) {}
 	async foreachClient(
-		callback: (client: ClientInstance) => Promise<void> | void,
+		callback: (client: ClientInstance) => Promise<void> | void
 	) {
 		const clients = await this.server.clients;
 		for (const [uuid, clientInfo] of Object.entries(clients)) {
@@ -30,8 +30,8 @@ export default class MessageQueue {
 				new ClientInstance(
 					uuid,
 					(data) => this.server.sendToClient(uuid, data),
-					clientInfo.headers,
-				),
+					clientInfo.headers
+				)
 			);
 			if (result) {
 				await result;
