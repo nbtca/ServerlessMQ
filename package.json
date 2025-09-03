@@ -9,6 +9,7 @@
         "build": "pnpm --filter serverless-mq-frontend build && pnpm --filter serverless-mq-backend run deploy",
         "build:frontend": "pnpm --filter serverless-mq-frontend build",
         "deploy": "pnpm --filter serverless-mq-backend run deploy",
+        "deploy:versions": "pnpm --filter serverless-mq-backend run deploy:versions",
         "format": "npx @biomejs/biome format --write ./backend/src ./frontend/src --staged",
         "lint": "npx @biomejs/biome lint --fix ./backend/src --staged && pnpm --filter serverless-mq-frontend lint:fix",
         "prepare": "husky",
