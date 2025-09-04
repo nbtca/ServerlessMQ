@@ -38,10 +38,20 @@ export class Webhook extends OpenAPIRoute {
 		},
 	};
 	async handle(c: Context<"/:topic">) {
+		// Get topic from URL params first (before consuming request body)
+		const topic = c.req.param("topic");
+		if (!topic) {
+			return c.json({ error: "Topic is required" }, 400);
+		}
+
+		// Validate authentication before consuming the request body
+		// This is crucial because signature validation needs the raw request body,
+		// but getValidatedData() consumes and caches the body stream
+		await auth(c, topic);
+
+		// Now we can safely get validated data
 		const data = await this.getValidatedData<typeof this.schema>();
 		const body = await data.body;
-		const topic = data.params.topic;
-		await auth(c, topic, c.req.text);
 		const mq = getMQ(c);
 		const count = await mq.onWebhookPost(c.req.raw, body);
 
