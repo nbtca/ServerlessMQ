@@ -59,7 +59,7 @@ const openapiUrl = "openapi.json";
 const openapi = fromHono(app, {
 	openapi_url: openapiUrl,
 	docs_url: null,
-	redoc_url: "docs",
+	redoc_url: "redoc",
 });
 
 // API documentation route

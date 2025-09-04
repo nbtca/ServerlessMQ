@@ -141,11 +141,7 @@ function timingSafeEqual(a: string, b: string): boolean {
 	return result === 0;
 }
 
-async function validateRequest(
-	ctx: Context,
-	topic: string,
-	getBody?: () => Promise<string>
-) {
+async function validateRequest(ctx: Context, topic: string) {
 	const { req, env } = ctx;
 	if (req.method === "GET") {
 		// get has no 'body' so only validate token
@@ -171,9 +167,7 @@ async function validateRequest(
 	}
 	if (reqSignature && secret) {
 		// secret is set and request has valid sha signature using the secret
-		if (
-			await verifySignature(secret, reqSignature, await (getBody ?? req.text)())
-		) {
+		if (await verifySignature(secret, reqSignature, await req.text())) {
 			return; // Signature is valid, pass
 		}
 		throw new HttpError("Signature mismatch", 401);
