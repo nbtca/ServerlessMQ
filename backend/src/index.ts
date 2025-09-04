@@ -68,6 +68,7 @@ app.get("/docs", Scalar({ url: openapiUrl }));
 // API routes
 openapi.post("/:topic", Webhook);
 openapi.get("/:topic", Websocket);
+openapi.get("/ws/:topic", Websocket);
 openapi.get("/:topic/logs", LogsEndpoint);
 
 // Serve static files - handle root path and static assets

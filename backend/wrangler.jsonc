@@ -18,6 +18,7 @@
 		// "TOPIC_TEST": "true",
 		// "TOPIC_TEST_PASSWORD": "test123"
 	},
+	"secrets_store_secrets": [],
 	"d1_databases": [
 		{
 			"binding": "ServerlessMQ",
