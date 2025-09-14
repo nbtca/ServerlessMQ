@@ -6,7 +6,6 @@ import { WebhookPacket } from "../types/packet/webhook";
 import { mapHeaders } from "../utils/req";
 import { type Client, ClientInstance } from "./client";
 import type WebSocketHibernationServer from "./websocketserver";
-import { LoggingService } from "./logging";
 
 function fillAddress(client: Client, uuid: string) {
 	return (
@@ -16,59 +15,12 @@ function fillAddress(client: Client, uuid: string) {
 	);
 }
 export default class MessageQueue {
-	private loggingService: LoggingService | null = null;
-	private env: any = null;
-
 	constructor(
 		private readonly topic: string,
 		public server:
 			| DurableObjectStub<WebSocketHibernationServer>
 			| WebSocketHibernationServer
 	) {}
-
-	// Initialize logging service if server has database access
-	private initLogging() {
-		if (!this.loggingService && this.server && "storageSql" in this.server) {
-			// Try to access database through server environment
-			// Note: We'll need to pass env through the constructor later
-		}
-	}
-
-	// Set environment for logging
-	setEnvironment(env: any) {
-		this.env = env;
-		if (env?.ServerlessMQ) {
-			this.loggingService = new LoggingService(env.ServerlessMQ);
-		}
-	}
-
-	// Log event if logging service is available
-	private async logEvent(
-		event_type:
-			| "websocket_connect"
-			| "websocket_message"
-			| "websocket_disconnect",
-		client: ClientInstance,
-		data?: any
-	) {
-		if (!this.loggingService || !this.env) return;
-
-		const clientIP =
-			client.headers["cf-connecting-ip"]?.[0] ||
-			client.headers["x-forwarded-for"]?.[0] ||
-			client.uuid;
-
-		await this.loggingService.logEvent(
-			{
-				topic: this.topic,
-				event_type,
-				client_ip: clientIP,
-				client_headers: client.headers,
-				data: data || {},
-			},
-			this.env
-		);
-	}
 	async foreachClient(
 		callback: (client: ClientInstance) => Promise<void> | void
 	) {
@@ -103,10 +55,6 @@ export default class MessageQueue {
 	async onNewClient(client: ClientInstance, request: Request) {
 		// Handle new client connection
 		console.log("New client connected", this.topic);
-		await this.logEvent("websocket_connect", client, {
-			url: request.url,
-			headers: mapHeaders(request.headers),
-		});
 		await this.broadcastClientChange();
 	}
 	async onReceiveMessage(client: ClientInstance, data: ArrayBuffer | string) {
@@ -114,13 +62,6 @@ export default class MessageQueue {
 		if (typeof data === "string") {
 			console.log("Received message", this.topic, data);
 		}
-		await this.logEvent("websocket_message", client, {
-			message:
-				typeof data === "string"
-					? data
-					: `[Binary data: ${data.byteLength} bytes]`,
-			direction: "received",
-		});
 		// broadcast to all clients except the sender
 		await this.foreachClient((target) => {
 			if (target.equals(client)) {
@@ -132,10 +73,6 @@ export default class MessageQueue {
 	async onClose(client: ClientInstance, code: number, reason: string) {
 		// Handle client close
 		console.log("Client closed", this.topic, code, reason);
-		await this.logEvent("websocket_disconnect", client, {
-			code,
-			reason,
-		});
 		await this.broadcastClientChange();
 	}
 	async onWebhookPost(req: Request, data: unknown) {

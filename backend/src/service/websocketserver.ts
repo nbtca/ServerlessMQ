@@ -6,18 +6,11 @@ import { extractTopicFromPath } from "../utils";
 import { mapHeaders } from "../utils/req";
 export class WebSocketHibernationServer extends DurableObject<Env> {
 	private _topic: string;
-	private _mq: MessageQueue | null = null;
-
 	public get topic() {
 		return this._topic;
 	}
-
 	public get mq() {
-		if (!this._mq) {
-			this._mq = new MessageQueue(this.topic, this);
-			this._mq.setEnvironment(this.env);
-		}
-		return this._mq;
+		return new MessageQueue(this.topic, this);
 	}
 	async storageSql(query: string, ...bindings: unknown[]) {
 		return this.ctx.storage.sql.exec(query, ...bindings);

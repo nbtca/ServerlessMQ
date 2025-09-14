@@ -3,7 +3,6 @@ import type { Context } from "../types";
 import { z } from "zod";
 import { validateRequest } from "../utils/auth";
 import { getMQ } from "../utils";
-import { LoggingService } from "../service/logging";
 export class Webhook extends OpenAPIRoute {
 	schema = {
 		tags: ["Webhook"],
@@ -36,36 +35,6 @@ export class Webhook extends OpenAPIRoute {
 		const mq = getMQ(c);
 		const body = await c.req.json();
 		const count = await mq.onWebhookPost(c.req.raw, body);
-
-		// Log webhook event if logging is enabled for this topic
-		if (c.env.ServerlessMQ) {
-			const loggingService = new LoggingService(c.env.ServerlessMQ);
-			const clientIP =
-				c.req.header("cf-connecting-ip") ||
-				c.req.header("x-forwarded-for") ||
-				"";
-			const headers: Record<string, string | string[]> = {};
-			c.req.raw.headers.forEach((value, key) => {
-				headers[key] = value;
-			});
-
-			await loggingService.logEvent(
-				{
-					topic,
-					event_type: "webhook",
-					client_ip: clientIP,
-					client_headers: headers,
-					data: {
-						method: c.req.method,
-						url: c.req.url,
-						body: body,
-						count: count,
-					},
-				},
-				c.env
-			);
-		}
-
 		return {
 			success: true,
 			count,
