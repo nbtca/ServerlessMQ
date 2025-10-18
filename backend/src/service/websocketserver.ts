@@ -4,7 +4,6 @@ import { ClientInstance } from "./client";
 import type { Client as ClientInfo } from "./client";
 import { extractTopicFromPath } from "../utils";
 import { mapHeaders } from "../utils/req";
-import type { Packet } from "../types";
 export class WebSocketHibernationServer extends DurableObject<Env> {
 	private _topic: string;
 	public get topic() {
@@ -171,23 +170,14 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		}
 		ws.close(1011, "Internal server error");
 	}
-	async broadcast(data: ArrayBuffer | string | Packet) {
-		if (typeof data !== "string" && !(data instanceof ArrayBuffer)) {
-			data = JSON.stringify(data);
-		}
+	async broadcast(data: ArrayBuffer | string) {
 		return (
 			await Promise.all(
 				Object.keys(this.clients).map((uuid) => this.sendToClient(uuid, data))
 			)
 		).length;
 	}
-	async broadcastExcept(
-		exceptUuid: string,
-		data: ArrayBuffer | string | Packet
-	) {
-		if (typeof data !== "string" && !(data instanceof ArrayBuffer)) {
-			data = JSON.stringify(data);
-		}
+	async broadcastExcept(exceptUuid: string, data: ArrayBuffer | string) {
 		return (
 			await Promise.all(
 				Object.keys(this.clients)

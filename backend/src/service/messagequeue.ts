@@ -1,10 +1,11 @@
 import {
 	ActiveBroadcastPacket,
+	type Packet,
 	type ActiveBroadcastPacketDataClient,
 } from "../types";
 import { WebhookPacket } from "../types/packet/webhook";
 import { mapHeaders } from "../utils/req";
-import { type Client, ClientInstance } from "./client";
+import type { Client, ClientInstance } from "./client";
 import type WebSocketHibernationServer from "./websocketserver";
 
 function fillAddress(client: Client, uuid: string) {
@@ -21,7 +22,21 @@ export default class MessageQueue {
 			| DurableObjectStub<WebSocketHibernationServer>
 			| WebSocketHibernationServer
 	) {}
-
+	async broadcast(data: ArrayBuffer | string | Packet) {
+		if (typeof data !== "string" && !(data instanceof ArrayBuffer)) {
+			data = JSON.stringify(data);
+		}
+		return this.server.broadcast(data);
+	}
+	async broadcastExcept(
+		exceptUuid: string,
+		data: ArrayBuffer | string | Packet
+	) {
+		if (typeof data !== "string" && !(data instanceof ArrayBuffer)) {
+			data = JSON.stringify(data);
+		}
+		return this.server.broadcastExcept(exceptUuid, data);
+	}
 	async broadcastClientChange() {
 		const clients = await this.server.clients;
 		const clientsInfo: ActiveBroadcastPacketDataClient[] = [];
@@ -34,7 +49,7 @@ export default class MessageQueue {
 		const pkt = new ActiveBroadcastPacket({
 			clients: clientsInfo,
 		});
-		const count = await this.server.broadcast(pkt);
+		const count = await this.broadcast(pkt);
 		console.log("Broadcasted client change", this.topic, count);
 		return count;
 	}
@@ -49,7 +64,7 @@ export default class MessageQueue {
 			console.log("Received message", this.topic, data);
 		}
 		// broadcast to all clients except the sender
-		const count = await this.server.broadcastExcept(client.uuid, data);
+		const count = await this.broadcastExcept(client.uuid, data);
 		console.log("Broadcasted message", this.topic, count);
 	}
 	async onClose(client: ClientInstance, code: number, reason: string) {
@@ -70,7 +85,7 @@ export default class MessageQueue {
 				url: req.url,
 			});
 			// broadcast to all clients
-			const count = await this.server.broadcast(pkt);
+			const count = await this.broadcast(pkt);
 			console.log("Broadcasted webhook", this.topic, count);
 			return count;
 		} catch (error) {
