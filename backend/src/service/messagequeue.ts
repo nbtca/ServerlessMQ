@@ -67,7 +67,7 @@ export default class MessageQueue {
 			if (target.equals(client)) {
 				return;
 			}
-			target.sendRaw(data);
+			return target.sendRaw(data);
 		});
 	}
 	async onClose(client: ClientInstance, code: number, reason: string) {
@@ -90,8 +90,8 @@ export default class MessageQueue {
 			// broadcast to all clients
 			const pktStr = JSON.stringify(pkt);
 			let count = 0;
-			await this.foreachClient((client) => {
-				client.sendRaw(pktStr);
+			await this.foreachClient(async (client) => {
+				await client.sendRaw(pktStr);
 				count++;
 			});
 			return count;
