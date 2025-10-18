@@ -21,23 +21,7 @@ export default class MessageQueue {
 			| DurableObjectStub<WebSocketHibernationServer>
 			| WebSocketHibernationServer
 	) {}
-	async foreachClient(
-		callback: (client: ClientInstance) => Promise<void> | void
-	) {
-		const clients = await this.server.clients;
-		for (const [uuid, clientInfo] of Object.entries(clients)) {
-			const result = callback(
-				new ClientInstance(
-					uuid,
-					(data) => this.server.sendToClient(uuid, data),
-					clientInfo.headers
-				)
-			);
-			if (result) {
-				await result;
-			}
-		}
-	}
+
 	async broadcastClientChange() {
 		const clients = await this.server.clients;
 		const clientsInfo: ActiveBroadcastPacketDataClient[] = [];
@@ -50,7 +34,9 @@ export default class MessageQueue {
 		const pkt = new ActiveBroadcastPacket({
 			clients: clientsInfo,
 		});
-		await this.foreachClient((client) => client.sendPacket(pkt));
+		const count = await this.server.broadcast(pkt);
+		console.log("Broadcasted client change", this.topic, count);
+		return count;
 	}
 	async onNewClient(client: ClientInstance, request: Request) {
 		// Handle new client connection
@@ -63,12 +49,8 @@ export default class MessageQueue {
 			console.log("Received message", this.topic, data);
 		}
 		// broadcast to all clients except the sender
-		await this.foreachClient((target) => {
-			if (target.equals(client)) {
-				return;
-			}
-			return target.sendRaw(data);
-		});
+		const count = await this.server.broadcastExcept(client.uuid, data);
+		console.log("Broadcasted message", this.topic, count);
 	}
 	async onClose(client: ClientInstance, code: number, reason: string) {
 		// Handle client close
@@ -88,12 +70,8 @@ export default class MessageQueue {
 				url: req.url,
 			});
 			// broadcast to all clients
-			const pktStr = JSON.stringify(pkt);
-			let count = 0;
-			await this.foreachClient(async (client) => {
-				await client.sendRaw(pktStr);
-				count++;
-			});
+			const count = await this.server.broadcast(pkt);
+			console.log("Broadcasted webhook", this.topic, count);
 			return count;
 		} catch (error) {
 			console.log(error);

@@ -4,6 +4,7 @@ import { ClientInstance } from "./client";
 import type { Client as ClientInfo } from "./client";
 import { extractTopicFromPath } from "../utils";
 import { mapHeaders } from "../utils/req";
+import type { Packet } from "../types";
 export class WebSocketHibernationServer extends DurableObject<Env> {
 	private _topic: string;
 	public get topic() {
@@ -119,10 +120,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		const id = this.getIdFromClient(ws);
 		this.onNewClient(id, { headers: headers });
 		const info = this.getInfoFromId(id);
-		await this.mq.onNewClient(
-			ClientInstance.from(id, ws, info.headers),
-			request
-		);
+		await this.mq.onNewClient(ClientInstance.from(id, info.headers), request);
 	}
 	async webSocketMessage(ws: WebSocket, data: ArrayBuffer | string) {
 		console.log(
@@ -132,10 +130,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		);
 		const id = this.getIdFromClient(ws);
 		const info = this.getInfoFromId(id);
-		await this.mq.onReceiveMessage(
-			ClientInstance.from(id, ws, info.headers),
-			data
-		);
+		await this.mq.onReceiveMessage(ClientInstance.from(id, info.headers), data);
 	}
 	async webSocketClose(
 		ws: WebSocket,
@@ -149,7 +144,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 			try {
 				const info = this.getInfoFromId(id);
 				await this.mq.onClose(
-					ClientInstance.from(id, ws, info.headers),
+					ClientInstance.from(id, info.headers),
 					code,
 					reason
 				);
@@ -170,11 +165,36 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		try {
 			const id = this.getIdFromClient(ws);
 			const info = this.getInfoFromId(id);
-			await this.mq.onError(ClientInstance.from(id, ws, info.headers), error);
+			await this.mq.onError(ClientInstance.from(id, info.headers), error);
 		} catch (clientError) {
 			console.error("[WebSocket] Error handling client error:", clientError);
 		}
 		ws.close(1011, "Internal server error");
+	}
+	async broadcast(data: ArrayBuffer | string | Packet) {
+		if (typeof data !== "string" && !(data instanceof ArrayBuffer)) {
+			data = JSON.stringify(data);
+		}
+		return (
+			await Promise.all(
+				Object.keys(this.clients).map((uuid) => this.sendToClient(uuid, data))
+			)
+		).length;
+	}
+	async broadcastExcept(
+		exceptUuid: string,
+		data: ArrayBuffer | string | Packet
+	) {
+		if (typeof data !== "string" && !(data instanceof ArrayBuffer)) {
+			data = JSON.stringify(data);
+		}
+		return (
+			await Promise.all(
+				Object.keys(this.clients)
+					.filter((uuid) => uuid !== exceptUuid)
+					.map((uuid) => this.sendToClient(uuid, data))
+			)
+		).length;
 	}
 }
 export default WebSocketHibernationServer;
