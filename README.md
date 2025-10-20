@@ -84,7 +84,7 @@ pnpm deploy
 
 #### 方式二：HMAC-SHA256 签名鉴权
 
-- **Header**: `X-Hub-Signature-256` 或任何以 `-Signature-256` 结尾的Header
+- **Header**: `X-Hub-Signature-256` 或任何以 `-Signature-256` `-Signature-Sha-256` 结尾的Header
 - **算法**: 使用配置的Secret作为HMAC密钥，对请求body进行SHA256签名
 - **格式**: `sha256=<hex_signature>`
 
@@ -130,7 +130,7 @@ const signature = await generateHMACSignature(secret, jsonBody);
 fetch('https://your-domain.com/service_1', {
   method: 'POST',
   headers: {
-    'X-Hub-Signature-256': `sha256=${signature}`,
+    'X-App-Signature-256': `sha256=${signature}`,
     'Content-Type': 'application/json'
   },
   body: jsonBody

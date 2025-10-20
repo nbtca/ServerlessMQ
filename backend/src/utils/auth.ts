@@ -57,7 +57,12 @@ function tryGetSignatureFromRequest(req: HonoRequest<string, unknown>) {
 	const allHeaders = req.header();
 	for (const key in allHeaders) {
 		// all like X-*-Signature-256, case insensitive
-		if (key.toLowerCase().endsWith("-signature-256")) {
+		// logto-signature-sha-256
+		const lowerKey = key.toLowerCase();
+		if (
+			lowerKey.endsWith("-signature-256") ||
+			lowerKey.endsWith("-signature-sha-256")
+		) {
 			return allHeaders[key];
 		}
 	}
@@ -100,10 +105,14 @@ async function verifySignature(
 ): Promise<boolean> {
 	// The signature starts with "sha256="
 	const sigParts = signature.split("=");
-	if (sigParts.length !== 2 || sigParts[0] !== "sha256") {
+	let sigHex: string;
+	if (sigParts.length === 1) {
+		sigHex = signature;
+	} else if (sigParts.length === 2 && sigParts[0] === "sha256") {
+		sigHex = sigParts[1];
+	} else {
 		return false;
 	}
-	const sigHex = sigParts[1];
 	// Create an encoder for the text
 	const encoder = new TextEncoder();
 	// Import the secret as a crypto key
