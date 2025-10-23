@@ -12,7 +12,8 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 	public get mq() {
 		return new MessageQueue(this.topic, this);
 	}
-	async storageSql(query: string, ...bindings: unknown[]) {
+	storageSql(query: string, ...bindings: unknown[]) {
+		console.log(query, " | ", ...bindings);
 		return this.ctx.storage.sql.exec(query, ...bindings);
 	}
 	get clients(): Record<string, ClientInfo> {
@@ -75,25 +76,6 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 			status: 501,
 		});
 	}
-	async processMessage(request: Request): Promise<Response> {
-		const data = await request.text();
-		const webSockets = this.ctx.getWebSockets();
-		for (const ws of webSockets) {
-			// Send the message to all connected WebSockets
-			ws.send(
-				`[Durable Object] message: ${data}, connections: ${webSockets.length}`
-			);
-		}
-		return new Response(
-			`[Durable Object] message: ${data}, connections: ${
-				this.ctx.getWebSockets().length
-			}`,
-			{
-				status: 200,
-				headers: { "Content-Type": "text/plain" },
-			}
-		);
-	}
 	async fetch(request: Request): Promise<Response> {
 		this._topic = extractTopicFromPath(request.url);
 		return await this.initializeWebSocket(request);
@@ -125,7 +107,7 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 		console.log(
 			`[WebSocket] Message: ${data}, connections: ${
 				this.ctx.getWebSockets().length
-			} ${this.clients.length}`
+			}`
 		);
 		const id = this.getIdFromClient(ws);
 		const info = this.getInfoFromId(id);
@@ -185,6 +167,12 @@ export class WebSocketHibernationServer extends DurableObject<Env> {
 					.map((uuid) => this.sendToClient(uuid, data))
 			)
 		).length;
+	}
+	async processWebhookPost(
+		req: Pick<Request, "headers" | "method" | "url">,
+		data: unknown
+	) {
+		return this.mq.onWebhookPost(req, data);
 	}
 }
 export default WebSocketHibernationServer;

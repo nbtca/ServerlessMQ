@@ -18,9 +18,7 @@ function fillAddress(client: Client, uuid: string) {
 export default class MessageQueue {
 	constructor(
 		private readonly topic: string,
-		public server:
-			| DurableObjectStub<WebSocketHibernationServer>
-			| WebSocketHibernationServer
+		public server: WebSocketHibernationServer
 	) {}
 	async broadcast(data: ArrayBuffer | string | Packet) {
 		if (typeof data !== "string" && !(data instanceof ArrayBuffer)) {
@@ -72,7 +70,10 @@ export default class MessageQueue {
 		console.log("Client closed", this.topic, code, reason);
 		await this.broadcastClientChange();
 	}
-	async onWebhookPost(req: Request, data: unknown) {
+	async onWebhookPost(
+		req: Pick<Request, "headers" | "method" | "url">,
+		data: unknown
+	) {
 		// console.log("this.server.storage.list()", await this.server.storage.list());
 		// Handle webhook post
 		console.log("Webhook", this.topic, data);

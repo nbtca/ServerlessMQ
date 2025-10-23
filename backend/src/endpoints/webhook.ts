@@ -2,7 +2,7 @@ import { OpenAPIRoute } from "chanfana";
 import type { Context } from "../types";
 import { z } from "zod";
 import { validateRequest } from "../utils/auth";
-import { getMQ } from "../utils";
+import { getServer } from "../utils";
 export class Webhook extends OpenAPIRoute {
 	schema = {
 		tags: ["Webhook"],
@@ -32,9 +32,17 @@ export class Webhook extends OpenAPIRoute {
 		const data = await this.getValidatedData<typeof this.schema>();
 		const topic = data.params.topic;
 		await validateRequest(c, topic);
-		const mq = getMQ(c);
+		const server = getServer(c);
 		const body = await c.req.json();
-		const count = await mq.onWebhookPost(c.req.raw, body);
+		const cr = c.req.raw;
+		const count = await server.processWebhookPost(
+			{
+				headers: cr.headers,
+				method: cr.method,
+				url: cr.url,
+			},
+			body
+		);
 		return {
 			success: true,
 			count,
