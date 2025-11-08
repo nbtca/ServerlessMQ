@@ -6,6 +6,7 @@ import {
 import { WebhookPacket } from "../types/packet/webhook";
 import { mapHeaders } from "../utils/req";
 import type { Client, ClientInstance } from "./client";
+import { StorageProvider } from "./storage";
 import type WebSocketHibernationServer from "./websocketserver";
 
 function fillAddress(client: Client, uuid: string) {
@@ -77,6 +78,11 @@ export default class MessageQueue {
 		// console.log("this.server.storage.list()", await this.server.storage.list());
 		// Handle webhook post
 		console.log("Webhook", this.topic, data);
+
+		const db = new StorageProvider({
+			exec: this.server.storageSql.bind(this.server),
+		});
+		await db.test();
 		try {
 			const pkt = new WebhookPacket({
 				body: data,
